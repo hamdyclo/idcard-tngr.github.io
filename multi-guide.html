@@ -1,0 +1,1064 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  
+  <meta charset="UTF-8" />
+  <title> ID Card Generator (Multiple Input)</title>
+  <style>
+    
+    body {
+    font-family: Arial, sans-serif;
+    padding: 18px;
+    background-image: url("./guide.png"); /* gambar tetap */
+    background-size: cover;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+    background-color: #f5f5f5;  /* warna dasar light */
+    transition: background-color 0.3s, color 0.3s;
+    }
+    .form-input { margin-bottom: 10px; }
+    .form-row { margin-bottom: 8px; display: flex; gap: 6px; }
+    .form-row input, .form-row textarea { padding: 4px; }
+      
+
+    /*dark mode*/
+    /* Hanya UI saja yang berubah */
+body.dark-mode {
+  background: #1e1e1e;
+  color: #f5f5f5;
+}
+
+body.dark-mode input,
+body.dark-mode textarea {
+  background: #333;
+  color: #fff;
+  border: 1px solid #555;
+}
+
+body.dark-mode .form-row {
+  background: #2a2a2a;
+  border: 1px solid #444;
+}
+
+/* Tombol tetap punya warna jelas */
+body.dark-mode .btn-preview {
+  background: #0288d1;
+}
+body.dark-mode .btn-delete {
+  background: #d32f2f;
+}
+
+/* ❌ Jangan ubah kartu */
+#card-template, 
+#card-template #card-bg {
+  background: none !important; /* biar nggak ketimpa mode gelap */
+  color: initial;
+}
+
+/* default (mode terang) */
+.close-btn {
+  color: #333;  /* hitam / abu gelap */
+  float: right;
+  font-size: 28px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: color 0.3s;
+}
+.close-btn:hover {
+  color: red;   /* highlight saat hover */
+}
+
+/* kalau body punya dark-mode */
+body.dark-mode .close-btn {
+  color: #000;   /* X jadi hitam di mode gelap */
+}
+body.dark-mode .close-btn:hover {
+  color: #ff5252; /* hover merah biar tetap jelas */
+}
+
+
+
+      /* JUDUL */
+      .hero {
+      text-align: center;
+      margin: 8px 0 18px;
+    }
+    .hero-title {
+      font-family: "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      font-weight: 800;
+      font-size: 30px;
+      line-height: 1.05;
+      margin: 0;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      background: linear-gradient(90deg, #00695c, #00bfa5);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent; /* gradient text */
+      text-shadow: 0 2px 8px rgba(0,0,0,0.12);
+    }
+    .hero-title .accent {
+      display: inline-block;
+      background: linear-gradient(90deg,#ffd54f,#ff8a65);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+    .hero-sub {
+      margin-top: 10px;
+      display: inline-flex;
+      gap: 10px;
+      align-items: center;
+      padding: 8px 14px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, rgba(0,191,165,0.10), rgba(2,77,70,0.03));
+      box-shadow: 0 8px 20px rgba(2,77,70,0.08);
+      color: #014f47;
+      font-weight: 600;
+      font-size: 15px;
+      letter-spacing: 0.2px;
+      backdrop-filter: blur(4px);
+      animation: float-sub 4s ease-in-out infinite;
+    }
+    .hero-sub .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 10px;
+      border-radius: 8px;
+      background: linear-gradient(90deg,#00bfa5,#00695c);
+      color: #fff;
+      font-size: 13px;
+      font-weight: 700;
+      box-shadow: 0 6px 18px rgba(0,191,165,0.18);
+    }
+    .hero-sub strong { color:#063f3a; margin:0 4px; }
+    .hero-sub em { color:#076a63; font-style:normal; opacity:0.95; margin-left:4px; }
+
+    @keyframes float-sub {
+      0%,100% { transform: translateY(0); }
+      50%     { transform: translateY(-6px); }
+    }
+
+    @media (max-width:600px){
+      .hero-sub { font-size:13px; padding:6px 10px; gap:8px; }
+      .hero-sub .badge { font-size:12px; padding:5px 8px; }
+    }
+
+    /* Kanvas ID Card */
+    
+    .id-card {
+      width: 800px;
+      height: 500px;
+      position: relative;
+      margin-top: 20px;
+      color: #006666;
+      overflow: hidden;
+      border: 1px solid #ddd;
+      background: transparent;
+    }
+
+    .multi-import {
+  display: flex;
+  justify-content: flex-end; /* membuat isi div ke kanan */
+  align-items: center;       /* vertikal center */
+  gap: 8px;                  /* jarak antar button dan input */
+  margin-bottom: 10px;       /* jarak bawah */
+  margin-top: 10px;
+}
+
+.multi-import button {
+  background: #1E90FF;       /* biru cerah */
+  color: white;               
+  border: none;               
+  padding: 8px 16px;          
+  border-radius: 6px;         
+  cursor: pointer;            
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2); 
+  transition: all 0.3s ease;  
+}
+
+.multi-import button:hover {
+  background: #1C86EE;        
+  transform: translateY(-2px); 
+}
+
+.multi-import input[type="file"] {
+  padding: 4px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  cursor: pointer;
+}
+
+    
+    #card-bg {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    .qr-container, .info-container { z-index: 1; position: absolute; }
+
+    .qr-container {
+      top: 130px;
+      left: 120px;
+      width: 200px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+    }
+    .qr-container .nama { font-size: 17px; font-weight: bold; text-transform: uppercase; margin-bottom: 5px; }
+    .qr-container #qrcode { width: 150px; height: 150px; margin-bottom: 5px; }
+    .qr-container .kode { font-size: 17px; font-weight: bold; }
+
+    .info-container {
+      top: 120px;
+      left: 450px;
+      width: 350px;
+      font-size: 14px;
+      line-height: 22px;
+      word-wrap: break-word;
+      white-space: pre-wrap;
+    }
+    .info-container .label { display: inline-block; width: 80px; vertical-align: top; }
+    .info-container .value { display: inline-block; width: 260px; vertical-align: top; white-space: pre-wrap; word-wrap: break-word; }
+
+    .buttons {
+  display: flex;
+  gap: 10px; /* jarak antar tombol */
+  margin-top: 15px;
+}
+
+/*button hapus */
+.btn-delete {
+  background: #e53935;
+  color: #fff;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.btn-delete:hover {
+  background: #b71c1c;
+}
+
+.btn-preview {
+  background: #1976d2; /* biru */
+  color: #fff;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.btn-preview:hover {
+  background: #0d47a1;
+}
+
+
+.buttons button {
+  color: #fff;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+  transition: all 0.3s ease;
+  margin-top: 30px; 
+}
+
+/* Warna berbeda untuk tiap tombol */
+.buttons button:nth-child(1) { background: #1cef00; } /* hijau toska */
+.buttons button:nth-child(2) { background: #3498db; } /* biru */
+.buttons button:nth-child(3) { background: #e67e22; } /* oranye */
+.buttons button:nth-child(4) { background: #c2e73c; } /* merah */
+.buttons button:nth-child(5) { background: #9b59b6; } /* ungu */
+
+/* Hover effect */
+.buttons button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+  
+}
+
+    
+    /* Tombol Tambah Row */
+button#tambah-row {
+  
+  background-color: #1abc58; /* hijau cerah */
+  color: #fff;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+  transition: all 0.3s ease;
+  
+}
+
+button#tambah-row:hover {
+  background-color: #218838; /* hijau lebih gelap saat hover */
+  transform: translateY(-2px);
+}
+
+/* header */
+
+.header-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: linear-gradient(90deg, #00bfa5, #00695c);
+  padding: 10px 20px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+}
+
+.header-bar h1 {
+  color: white;
+  font-size: 20px;
+  margin: 0;
+}
+
+.header-buttons {
+  display: flex;
+  gap: 10px;
+}
+
+.header-buttons button {
+  background: linear-gradient(90deg, #00bfa5, #00695c);
+  color: white;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+  transition: all 0.3s ease;
+}
+
+.header-buttons button:hover {
+  background: linear-gradient(90deg, #00997a, #004d40); /* lebih gelap saat hover */
+  transform: translateY(-2px);
+}
+
+.header-buttons input[type="file"] {
+  display: none; /* sembunyikan input, trigger pakai tombol */
+}
+
+/*unduhan setiap kartu (unduh 1 biji) */
+.card-wrapper {
+  display: flex;
+  align-items: flex-start; /* tombol sejajar ke atas */
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+.card-download-btn {
+  background: linear-gradient(90deg, #00bfa5, #00695c);
+  color: white;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 6px;
+  font-size: 14px;
+  cursor: pointer;
+  font-weight: bold;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+  transition: all 0.3s ease;
+  margin-top: 20px; /* ✅ lebih turun lagi (≈ 2 baris teks) */
+}
+
+.card-download-btn:hover {
+  background: linear-gradient(90deg, #00997a, #004d40);
+  transform: translateY(-2px);
+}
+
+
+/* preview*/
+
+
+/* modal dasar */
+.modal {
+  display: none;
+  position: fixed;
+  z-index: 9999;
+  left: 0; top: 0;
+  width: 100%; height: 100%;
+  background-color: rgba(0,0,0,0.5);
+  justify-content: center;
+  align-items: center;
+  overflow: auto;
+}
+
+/* konten modal */
+.modal-content {
+  background: #fff;
+  padding: 20px;
+  border-radius: 12px;
+  max-width: 850px;
+  width: 95%;
+  box-shadow: 0 5px 20px rgba(0,0,0,0.4);
+  transform: scale(0.8);
+  opacity: 0;
+  transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+/* saat modal aktif → animasi jalan */
+.modal.show .modal-content {
+  transform: scale(1);
+  opacity: 1;
+}
+
+/* tombol close */
+.close-btn {
+  float: right;
+  font-size: 28px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+
+#card-info {
+  text-align: left;   /* rata kiri */
+  margin-top: 10px;
+}
+#card-info .label {
+  display: inline-block;
+  width: 80px;       /* biar label rata rapi */
+  font-weight: normal;
+}
+#card-info .value {
+  display: inline-block;
+}
+
+/*filter dan serach*/
+.form-row.is-hidden { display: none !important; }
+.search-bar {
+  margin-bottom: 15px;
+  text-align: right;
+}
+
+#searchInput {
+  padding: 8px 12px;
+  width: 250px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+}
+
+  </style>
+</head>
+
+<body>
+  <div id="preview-modal" class="modal">
+  <div class="modal-content">
+    <span class="close-btn" onclick="closePreview()">&times;</span>
+    <div id="preview-area"></div>
+  </div>
+</div>
+
+  <header class="hero" role="banner" aria-label="Judul halaman">
+    <br><br>
+    <h2 class="hero-title">
+      Input <span class="accent">Multiple</span><br> ID Card
+    </h2>
+    <br>
+    <div class="hero-sub">
+      <span class="badge">🚀 Cara Cepat</span>
+      Membuat ID Card Anda Rapi Dan Mudah -- Kami Menyelesaikan Masalah <span class="badge"><strong>DENGAN MASALAH</strong></span>🔥🔥🔥
+    </div>
+    <div class="hero-sub">
+      
+    </div>
+    <br>
+    <div class="hero-sub">
+      <span class="badge">ANDA SOPAN KAMI CURIGA !!!</span>
+    </div>
+  </header>
+
+  <!--HEADER WEB -->
+<div class="header-bar">
+  <h1>🏡 Menu Utama</h1>
+  <div class="header-buttons">
+    <!-- Import Excel -->
+    <label>
+      <button onclick="document.getElementById('excel-file').click()">📂 Import Excel</button>
+      <input type="file" id="excel-file" accept=".xlsx,.xls,.csv" onchange="importExcel()" />
+    </label>
+
+    <!-- Ganti Background Kartu -->
+    <label>
+      <button onclick="document.getElementById('bg-upload').click()">🎴 Ganti BG Kartu</button>
+      <input type="file" id="bg-upload" accept="image/*" onchange="setCardBg(this)" />
+    </label>
+
+    <!-- Ganti Background Web -->
+    <label>
+      <button onclick="document.getElementById('body-bg-upload').click()">🌄 Ganti BG Web</button>
+      <input type="file" id="body-bg-upload" accept="image/*" onchange="setBodyBg(this)" />
+    </label>
+
+    <!-- Dark Mode -->
+    <label>
+      <button id="darkToggle" onclick="toggleDarkMode()">🌙 Mode Gelap</button>
+    </label>
+  </div>
+</div>
+
+  <!-- search dan filter -->
+<div class="search-bar">
+  <input type="text" id="searchInput" placeholder="🔍 Cari Nama / NIK..." onkeyup="filterRows()">
+</div>
+
+
+  <!-- FORM INPUT MULTIPLE -->
+
+  <br>
+  <div id="multi-form">
+    <div class="form-row">
+      <input type="text" class="nama" placeholder="Nama" />
+      <input type="text" class="nik" placeholder="NIK" />
+      <input type="text" class="id" placeholder="ID" />
+      <textarea class="alamat" rows="1" placeholder="Alamat"></textarea>
+      <button type="button" class="btn-delete" onclick="removeRow(this)">Hapus</button>
+      <button type="button" class="btn-preview" onclick="previewRow(this)">Preview</button>
+    </div>
+    
+  </div>
+  <div class="add-rows" style="margin-top:8px; display:flex; gap:8px; align-items:center;">
+    <button id="tambah-row" onclick="addRow()">Tambah Baris</button>
+    <input id="add-count" type="number" min="1" value="1" style="width:80px;padding:6px;border-radius:6px;border:1px solid #ccc;" />
+  </div>
+  <div class="buttons">
+  <button onclick="generateAllCards(); showToast('Proses generate dimulai', 'info', 1000)">Generate Semua</button>
+  <button onclick="downloadAll('png');">Download Semua PNG</button>
+  <button onclick="downloadAll('jpg');">Download Semua JPG</button>
+  <button onclick="downloadAllPDF();">Download Semua PDF</button>
+  <button onclick="downloadAllZIP();">Download Semua ZIP</button>
+</div>
+
+  <!-- Template card -->
+  <div class="id-card" id="card-template" style="display:none;">
+    <img id="card-bg" src="./guide.png" alt="bg">
+    <div class="qr-container">
+      <div class="nama" id="card-nama"></div>
+      <div id="qrcode"></div>
+      <div class="kode" id="card-id"></div>
+    </div>
+    <div class="info-container" id="card-info"></div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script>
+
+    function addRow(count) {
+    const template = document.querySelector('.form-row');
+    if (!template) return showToast('Tidak ada template form-row.', 'warn', 2000);
+
+    // jika count tidak diberikan, baca dari input #add-count
+    let toAdd = Number(count ?? document.getElementById('add-count').value) || 1;
+    toAdd = Math.max(1, Math.min(200, toAdd)); // batasi antara 1..200
+
+    const container = document.getElementById('multi-form');
+    const frag = document.createDocumentFragment();
+    for (let i = 0; i < toAdd; i++) {
+      const row = template.cloneNode(true);
+      row.querySelectorAll('input,textarea').forEach(i=>i.value='');
+      frag.appendChild(row);
+    }
+    container.appendChild(frag);
+
+    const total = document.querySelectorAll('.form-row').length;
+    showToast(`${toAdd} baris berhasil ditambahkan (total ${total}).`, 'success', 2500);
+  }
+
+    function removeRow(btn) {
+  const row = btn.parentElement;
+  if(document.querySelectorAll('.form-row').length > 1) {
+    row.remove();
+    showToast('Baris berhasil dihapus', 'success', 2800);
+  } else {
+    showToast('Minimal 1 row harus ada.', 'warn', 3500);
+  }
+}
+    function escapeHtml(text) {
+      const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
+      return String(text).replace(/[&<>"']/g, function(m) { return map[m]; });
+    }
+
+    function ensureBgLoaded(img) {
+      return new Promise((resolve,reject)=>{
+        if(!img) return resolve();
+        if(img.complete && img.naturalWidth!==0) return resolve();
+        img.onload=()=>resolve();
+        img.onerror=()=>reject(new Error('Gagal memuat background.'));
+      });
+    }
+
+    function ensureToastStyles() {
+      if (document.getElementById('toast-styles')) return;
+      const css = `
+        #toast-container {
+          position: fixed;
+          top: 40px;
+          right: 40px;
+          z-index: 99999;
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+          pointer-events: auto;
+        }
+        .toast {
+          min-width: 260px;
+          max-width: 360px;
+          background: #222;
+          color: #fff;
+          padding: 12px 14px;
+          border-radius: 10px;
+          box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+          display: flex;
+          gap: 10px;
+          align-items: center;
+          transform: translateY(-10px);
+          opacity: 0;
+          transition: transform .28s ease, opacity .28s ease;
+          pointer-events: auto;
+          font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+        }
+        .toast.show { transform: translateY(0); opacity: 1; }
+        .toast.success { background: linear-gradient(90deg,#2ecc71,#27ae60); }
+        .toast.info { background: linear-gradient(90deg,#3498db,#2b86d8); }
+        .toast.warn { background: linear-gradient(90deg,#f39c12,#e67e22); }
+        .toast .toast-icon { width: 36px; height: 36px; display:flex; align-items:center; justify-content:center; font-weight:700; border-radius:6px; background: rgba(255,255,255,0.12); }
+        .toast .toast-message { flex:1; font-size:14px; line-height:1.25; }
+      `;
+      const s = document.createElement('style');
+      s.id = 'toast-styles';
+      s.appendChild(document.createTextNode(css));
+      document.head.appendChild(s);
+    }
+
+    function showToast(msg, type='success', duration=3000, delay=0) {
+  ensureToastStyles();
+  return new Promise(resolve => {
+    setTimeout(()=> {
+      let container = document.getElementById('toast-container');
+      if (!container) {
+        container = document.createElement('div');
+        container.id = 'toast-container';
+        document.body.appendChild(container);
+      }
+      const t = document.createElement('div');
+      t.className = `toast ${type}`;
+      t.innerHTML = `<div class="toast-icon">${ type === 'success' ? '✓' : type === 'warn' ? '!' : 'i' }</div>
+                     <div class="toast-message">${escapeHtml(msg)}</div>`;
+      container.appendChild(t);
+      requestAnimationFrame(()=> t.classList.add('show'));
+      setTimeout(()=>{
+        t.classList.remove('show');
+        setTimeout(()=> { t.remove(); resolve(); }, 300);
+      }, duration);
+    }, delay);
+  });
+}
+
+    // Ganti implementasi generateAllCards: panggil showToast alih-alih alert
+    async function generateAllCards() {
+  const rows = document.querySelectorAll('#multi-form .form-row:not(.is-hidden)');
+  const container = document.getElementById('generated-cards');
+  container.innerHTML = "";
+
+  rows.forEach((row, i) => {
+    const nama   = row.querySelector('.nama').value || '';
+    const nik    = row.querySelector('.nik').value || '';
+    const id     = row.querySelector('.id').value || '';
+    const alamat = row.querySelector('.alamat').value || '';
+
+    const tpl = document.getElementById('card-template').cloneNode(true);
+    tpl.style.display = 'block';
+    tpl.id = 'card-' + i;
+
+    tpl.querySelector('#card-nama').innerText = nama;
+    tpl.querySelector('#card-id').innerText   = id;
+    tpl.querySelector('#card-info').innerHTML = `
+      <table class="info-table">
+        <tr><td class="label">NIK</td><td class="sep">:</td><td class="value">${escapeHtml(nik)}</td></tr>
+        <tr><td class="label">ALAMAT</td><td class="sep">:</td><td class="value">${escapeHtml(alamat).replace(/\n/g,'<br>')}</td></tr>
+      </table>
+    `;
+
+    const qr = tpl.querySelector('#qrcode');
+    qr.innerHTML = '';
+    new QRCode(qr, { text: id || (nama+'|'+nik), width: 150, height: 150 });
+
+    if (window.currentBg) tpl.querySelector('#card-bg').src = window.currentBg;
+
+    container.appendChild(tpl);
+  });
+}
+
+
+
+
+    async function downloadAll(type='png') {
+  const cards = document.querySelectorAll('.generated-card');
+  for(const card of cards){
+    await ensureBgLoaded(card.querySelector('#card-bg'));
+    const canvas = await html2canvas(card,{useCORS:true,scale:2});
+    canvas.toBlob(blob=>{ 
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      const nama = card.querySelector('#card-nama').innerText || 'Unknown';
+      const id   = card.querySelector('#card-id').innerText || '';
+      a.download = `${nama}_${id}.${type}`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    }, type==='png'?'image/png':'image/jpeg',1);
+  }
+  if (cards.length > 0) {
+    showToast(`Berhasil mengunduh ${cards.length} kartu.`, 'success', 2500);
+  } else {
+    showToast('Silakan Generate dulu!', 'warn', 2500);
+  }
+}
+
+    async function downloadAllPDF(){
+      const cards = document.querySelectorAll('.generated-card');
+      const { jsPDF } = window.jspdf;
+      const pdf = new jsPDF({ orientation:'landscape', unit:'px' });
+
+      for(let i=0;i<cards.length;i++){
+        await ensureBgLoaded(cards[i].querySelector('#card-bg'));
+        const canvas = await html2canvas(cards[i], {useCORS:true, scale:2});
+        const imgData = canvas.toDataURL('image/jpeg',1.0);
+        if(i>0) pdf.addPage();
+        pdf.addImage(imgData,'JPEG',0,0,canvas.width,canvas.height);
+      }
+      if(cards.length === 0) {
+        showToast('Silakan Generate dulu!', 'warn', 2500);
+        return;
+      } else {
+        showToast(`Berhasil menyusun ${cards.length} kartu ke PDF.`, 'success', 2500);
+      }
+      pdf.save('all_idcards.pdf');
+    }
+
+    //file import excel
+    function importExcel() {
+  const fileInput = document.getElementById('excel-file');
+  if(fileInput.files.length === 0)
+  { showToast('Pilih file Excel dulu', 'warn', 2500); return; }
+  else { showToast('Data Berhasil Diunggah', 'success', 2500); }
+
+  const file = fileInput.files[0];
+  const reader = new FileReader();
+
+  reader.onload = function(e) {
+    const data = new Uint8Array(e.target.result);
+    const workbook = XLSX.read(data, {type:'array'});
+    const sheetName = workbook.SheetNames[0];
+    const sheet = workbook.Sheets[sheetName];
+    const json = XLSX.utils.sheet_to_json(sheet);
+
+    const multiForm = document.getElementById('multi-form');
+    // jangan hapus seluruh innerHTML, cukup hapus semua row kecuali template
+    const templateRow = multiForm.querySelector('.form-row');
+    multiForm.querySelectorAll('.form-row:not(:first-child)').forEach(r => r.remove());
+
+    json.forEach((rowData,index)=>{
+  const keys = Object.keys(rowData).reduce((acc,k)=> {
+    acc[k.toLowerCase().trim()] = rowData[k];
+    return acc;
+  },{});
+
+  let row;
+  if(index===0) {
+    row = templateRow;
+  } else {
+    row = templateRow.cloneNode(true);
+    row.querySelectorAll('input,textarea').forEach(i=>i.value='');
+    multiForm.appendChild(row);
+  }
+
+  row.querySelector('.nama').value = keys['nama'] || '';
+  row.querySelector('.nik').value  = keys['nik'] || '';
+  row.querySelector('.id').value   = keys['id'] || '';
+  row.querySelector('.alamat').value = keys['alamat'] || '';
+});
+  }
+
+  reader.readAsArrayBuffer(file);
+}
+
+// file zip 
+
+async function downloadAllZIP() {
+  const cards = document.querySelectorAll('.generated-card');
+  if(cards.length === 0)
+  { showToast('Silakan Generate dulu!', 'warn', 2500); return; }
+  else
+  { showToast('Membuat File ZIP... Mohon Menunggu', 'info', 2500); }
+
+  const zip = new JSZip();
+
+  for(const card of cards){
+    await ensureBgLoaded(card.querySelector('#card-bg'));
+    const canvas = await html2canvas(card, {useCORS:true, scale:2});
+    const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png', 1));
+
+    const nama = card.querySelector('#card-nama').innerText || 'Unknown';
+    const id   = card.querySelector('#card-id').innerText || '';
+    const filename = `${nama}_${id}.png`;
+
+    zip.file(filename, blob);
+  }
+
+  // generate zip dan unduh
+  zip.generateAsync({type:"blob"}).then(function(content){
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(content);
+    a.download = "all_idcards.zip";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  });
+}
+
+// ganti background card
+function setCardBg(input) {
+  if (input.files && input.files[0]) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const bgURL = e.target.result;
+      // simpan URL ke global agar dipakai juga saat generate kartu baru
+      window.currentBg = bgURL;
+
+      // update semua background yang ada sekarang
+      document.querySelectorAll('#card-bg').forEach(img => {
+        img.src = bgURL;
+      });
+    };
+    reader.readAsDataURL(input.files[0]);
+    showToast('Background berhasil diubah', 'success', 2500);
+  } else {
+    showToast('Pilih file gambar dulu', 'warn', 2500);
+  }
+}
+
+// saat generate kartu, pakai background terbaru
+async function generateAllCards() {
+  // hanya ambil baris yang terlihat (tidak punya class .is-hidden)
+  const formRows = document.querySelectorAll('#multi-form .form-row:not(.is-hidden)');
+  const container = document.body;
+  // hapus kartu & tombol lama
+  document.querySelectorAll('.card-wrapper').forEach(c => c.remove());
+
+  formRows.forEach((row,index)=>{
+    const nama   = row.querySelector('.nama').value || '';
+    const nik    = row.querySelector('.nik').value || '';
+    const id     = row.querySelector('.id').value || '';
+    const alamat = row.querySelector('.alamat').value || '';
+
+    // clone template
+    const template = document.getElementById('card-template').cloneNode(true);
+    template.style.display = 'block';
+    template.id = `card-${index}`;
+    template.classList.add('generated-card');
+
+    // isi data
+    template.querySelector('#card-nama').innerText = nama;
+    template.querySelector('#card-id').innerText   = id;
+
+    const infoHTML  = '<div><span class="label">NIK         :</span><span class="value">'+escapeHtml(nik)+'</span></div>';
+    const alamatEsc = escapeHtml(alamat).replace(/\n/g, '<br>');
+    const infoHTML2 = '<div><span class="label">ALAMAT :</span><span class="value">'+alamatEsc+'</span></div>';
+    template.querySelector('#card-info').innerHTML = infoHTML + infoHTML2;
+
+    // QR Code
+    const qrBox = template.querySelector('#qrcode');
+    qrBox.innerHTML = '';
+    new QRCode(qrBox, { text:id || nama+'|'+nik, width:150, height:150 });
+
+    if (window.currentBg) {
+      template.querySelector('#card-bg').src = window.currentBg;
+    }
+
+    // wrapper kartu + tombol download
+    const wrapper = document.createElement('div');
+    wrapper.className = "card-wrapper";
+
+    const downloadBtn = document.createElement('button');
+    downloadBtn.className = "card-download-btn";
+    downloadBtn.innerHTML = `<i class="fa-solid fa-download"></i> DOWNLOAD ID CARD (${nama || 'Kartu'})`;
+    downloadBtn.onclick = () => downloadSingleCard(template.id, 'png');
+
+    wrapper.appendChild(template);
+    wrapper.appendChild(downloadBtn);
+    container.appendChild(wrapper);
+  });
+
+  if (formRows.length > 0) {
+    showToast(`Berhasil generate ${formRows.length} kartu.`, 'success', 3200, 1000);
+  } else {
+    showToast('Tidak ada data yang cocok dengan filter!', 'warn', 2500);
+  }
+}
+
+
+
+
+
+// ganti background
+
+function setBodyBg(input) {
+  if (input.files && input.files[0]) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const bgURL = e.target.result;
+      document.body.style.backgroundImage = `url('${bgURL}')`;
+      document.body.style.backgroundSize = "cover"; 
+      document.body.style.backgroundAttachment = "fixed"; 
+      document.body.style.backgroundRepeat = "no-repeat"; 
+      showToast('Background web berhasil diubah', 'success', 2500);
+    };
+    reader.readAsDataURL(input.files[0]);
+  } else {
+    showToast('Pilih file gambar dulu', 'warn', 2500);
+  }
+}
+
+//HEADER SCRIPT
+
+function setBodyBg(input) {
+  if (input.files && input.files[0]) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      document.body.style.backgroundImage = `url('${e.target.result}')`;
+      document.body.style.backgroundSize = "cover";
+      document.body.style.backgroundAttachment = "fixed";
+      document.body.style.backgroundRepeat = "no-repeat";
+      showToast('Background web berhasil diubah', 'success', 2500);
+    };
+    reader.readAsDataURL(input.files[0]);
+  } else {
+    showToast('Pilih file gambar dulu', 'warn', 2500);
+  }
+}
+
+//unduh kartu perbiji
+async function downloadSingleCard(cardId, type='png') {
+  const card = document.getElementById(cardId);
+  if (!card) return;
+
+  await ensureBgLoaded(card.querySelector('#card-bg'));
+  const canvas = await html2canvas(card, { useCORS:true, scale:2 });
+
+  canvas.toBlob(blob => {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    const nama = card.querySelector('#card-nama').innerText || 'Unknown';
+    const id   = card.querySelector('#card-id').innerText || '';
+    a.download = `${nama}_${id}.${type}`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  }, type==='png'?'image/png':'image/jpeg',1);
+}
+
+//preview button
+function previewRow(btn) {
+  const row = btn.parentElement;
+  const nama   = row.querySelector('.nama').value || '';
+  const nik    = row.querySelector('.nik').value || '';
+  const id     = row.querySelector('.id').value || '';
+  const alamat = row.querySelector('.alamat').value || '';
+
+  const template = document.getElementById('card-template').cloneNode(true);
+  template.style.display = 'block';
+  template.id = 'preview-card';
+  
+  template.querySelector('#card-nama').innerText = nama;
+  template.querySelector('#card-id').innerText   = id;
+
+  const infoHTML  = '<div><span class="label">NIK         :</span><span class="value">'+escapeHtml(nik)+'</span></div>';
+    const alamatEsc = escapeHtml(alamat).replace(/\n/g, '<br>');
+    const infoHTML2 = '<div><span class="label">ALAMAT :</span><span class="value">'+alamatEsc+'</span></div>';
+    template.querySelector('#card-info').innerHTML = infoHTML + infoHTML2;
+
+  
+
+  const qrBox = template.querySelector('#qrcode');
+  qrBox.innerHTML = '';
+  new QRCode(qrBox, { text:id || nama+'|'+nik, width:150, height:150 });
+
+  if (window.currentBg) {
+    template.querySelector('#card-bg').src = window.currentBg;
+  }
+
+  // tampilkan ke modal
+  const previewArea = document.getElementById('preview-area');
+  previewArea.innerHTML = '';
+  previewArea.appendChild(template);
+
+  document.getElementById('preview-modal').style.display = 'flex';
+  
+  const modal = document.getElementById('preview-modal');
+  modal.style.display = 'flex';
+
+  // trigger animasi
+  setTimeout(() => modal.classList.add("show"), 10);
+
+}
+
+function closePreview() {
+  const modal = document.getElementById('preview-modal');
+  modal.classList.remove("show");
+  // tunggu animasi hilang dulu baru display none
+  setTimeout(() => modal.style.display = 'none', 300);
+}
+
+//Dark Mode
+function toggleDarkMode() {
+  document.body.classList.toggle("dark-mode");
+  const isDark = document.body.classList.contains("dark-mode");
+  // update teks tombol
+  document.getElementById("darkToggle").innerText = isDark ? "☀️ Mode Terang" : "🌙 Mode Gelap";
+  // simpan preferensi user
+  localStorage.setItem("darkMode", isDark ? "1" : "0");
+}
+
+// aktifkan mode terakhir dipilih user
+window.addEventListener("DOMContentLoaded", () => {
+  if (localStorage.getItem("darkMode") === "1") {
+    document.body.classList.add("dark-mode");
+    document.getElementById("darkToggle").innerText = "☀️ Mode Terang";
+  }
+});
+
+//filtre dan search
+function filterRows() {
+  const q = document.getElementById('searchInput').value.trim().toLowerCase();
+  document.querySelectorAll('#multi-form .form-row').forEach(row => {
+    const nama = (row.querySelector('.nama')?.value || '').toLowerCase();
+    const nik  = (row.querySelector('.nik')?.value  || '').toLowerCase();
+    const match = !q || nama.includes(q) || nik.includes(q);
+    row.classList.toggle('is-hidden', !match); // ⬅️ tandai dengan class
+  });
+}
+
+
+  </script>
+</body>
+</html>
