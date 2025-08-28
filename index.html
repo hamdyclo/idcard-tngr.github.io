@@ -569,7 +569,7 @@ button#tambah-row:hover {
   <button onclick="downloadAll('png');">Download Semua PNG</button>
   <button onclick="downloadAll('jpg');">Download Semua JPG</button>
   <button onclick="downloadAllPDF();">Download Semua PDF</button>
-  <button onclick="downloadAllZIP();">Download Semua ZIP</button>
+  <button onclick="downloadAllZIP();">Download PDF DALAM RAR/ZIP</button>
 </div>
 
   <!-- Template card -->
@@ -1079,15 +1079,6 @@ async function downloadSingleCard(cardId) {
   pdf.save(`${nama}_${id}.pdf`);
 }
 
-// download semua kartu jadi file PDF terpisah
-async function downloadAllPDF() {
-  const cards = document.querySelectorAll('.card'); // sesuaikan class kartu Anda
-  for (const card of cards) {
-    const cardId = card.id;
-    await downloadSingleCard(cardId);
-  }
-}
-
 
 
 
@@ -1176,4 +1167,5 @@ function filterRows() {
   </script>
 </body>
 </html>
+
 
