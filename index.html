@@ -206,23 +206,35 @@ body.dark-mode .close-btn:hover {
     .qr-container, .info-container { z-index: 1; position: absolute; }
 
     .qr-container {
-      top: 130px;
-      left: 120px;
-      width: 200px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      text-align: center;
-    }
-    .qr-container .nama { font-size: 17px; font-weight: bold; text-transform: uppercase; margin-bottom: 5px; }
-    .qr-container #qrcode { width: 150px; height: 150px; margin-bottom: 5px; }
-    .qr-container .kode { font-size: 17px; font-weight: bold; }
+  top: 105px;
+  left: 120px;
+  width: 200px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  font-family: Arial, "Helvetica Neue", Helvetica, sans-serif; /* tambahkan font Arial */
+}
+.qr-container .nama {
+  font-size: 23px;
+  font-weight: 800;
+  text-transform: uppercase;
+  margin-bottom: 5px;
+  font-family: inherit; /* wariskan font dari container */
+}
+.qr-container #qrcode { width: 150px; height: 150px; margin-bottom: 5px; }
+.qr-container .kode {
+  font-size: 23px;
+  font-weight: bold;
+  font-family: inherit;
+}
+    
 
     .info-container {
-      top: 120px;
+      top: 110px;
       left: 450px;
       width: 350px;
-      font-size: 14px;
+      font-size: 17px;
       line-height: 22px;
       word-wrap: break-word;
       white-space: pre-wrap;
@@ -426,10 +438,19 @@ button#tambah-row:hover {
 }
 
 
-#card-info {
-  text-align: left;   /* rata kiri */
-  margin-top: 10px;
+/* Geser blok NIK & Alamat lebih ke kiri */
+.card-info {
+  right: 550px !important;  /* pakai !important kalau override gagal */
 }
+
+/* Atur font khusus untuk NIK dan Alamat */
+.card-info .nik,
+.card-info .alamat {
+  font-size: 22px !important;  /* perbesar font */
+  font-weight: 500;            /* agak bold */
+}
+
+
 #card-info .label {
   display: inline-block;
   width: 80px;       /* biar label rata rapi */
@@ -488,9 +509,16 @@ button#tambah-row:hover {
   <h1>🏡 Menu Utama</h1>
   <div class="header-buttons">
     <!-- Import Excel -->
+     
+
+     
+
     <label>
       <button onclick="document.getElementById('excel-file').click()">📂 Import Excel</button>
-      <input type="file" id="excel-file" accept=".xlsx,.xls,.csv" onchange="importExcel()" />
+      <input type="file" id="excel-file" onchange="importExcel(event)" />
+      <select id="sheet-select" onchange="loadSelectedSheet()"></select>
+
+
     </label>
 
     <!-- Ganti Background Kartu -->
@@ -756,51 +784,105 @@ button#tambah-row:hover {
     }
 
     //file import excel
-    function importExcel() {
-  const fileInput = document.getElementById('excel-file');
-  if(fileInput.files.length === 0)
-  { showToast('Pilih file Excel dulu', 'warn', 2500); return; }
-  else { showToast('Data Berhasil Diunggah', 'success', 2500); }
+    let currentWorkbook = null;
 
-  const file = fileInput.files[0];
+function importExcel(evt) {
+  const file = evt.target.files[0];
+  if (!file) {
+    console.error("Tidak ada file dipilih");
+    return;
+  }
+
   const reader = new FileReader();
-
   reader.onload = function(e) {
     const data = new Uint8Array(e.target.result);
-    const workbook = XLSX.read(data, {type:'array'});
-    const sheetName = workbook.SheetNames[0];
-    const sheet = workbook.Sheets[sheetName];
-    const json = XLSX.utils.sheet_to_json(sheet);
+    const workbook = XLSX.read(data, { type: 'array' });
+
+    // simpan workbook global
+    window.currentWorkbook = workbook;
+
+    // isi dropdown sheet
+    const sheetSelect = document.getElementById('sheet-select');
+    sheetSelect.innerHTML = "";
+    workbook.SheetNames.forEach(name => {
+      const option = document.createElement('option');
+      option.value = name;
+      option.textContent = name;
+      sheetSelect.appendChild(option);
+    });
+
+    // load sheet pertama
+    loadSelectedSheet();
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function loadSelectedSheet() {
+  try {
+    if (!window.currentWorkbook) {
+      console.error("Workbook belum ada");
+      return;
+    }
+
+    const sheetName = document.getElementById('sheet-select').value;
+    const sheet = window.currentWorkbook.Sheets[sheetName];
+    if (!sheet) {
+      console.error("Sheet tidak ditemukan:", sheetName);
+      return;
+    }
+
+    // Baca semua isi sheet (raw array of arrays)
+    const raw = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
+    console.log("RAW (10 baris pertama):", raw.slice(0, 10));
+
+    // Cari baris header (ada kata "NAMA")
+    const headerRowIndex = raw.findIndex(r =>
+      r.some(c => String(c).toLowerCase().includes("nama"))
+    );
+    if (headerRowIndex === -1) {
+      console.error("Header tidak ditemukan");
+      return;
+    }
+
+    const headers = raw[headerRowIndex].map(h => String(h).toLowerCase().trim());
+    const dataRows = raw.slice(headerRowIndex + 1);
+    console.log("Header:", headers);
 
     const multiForm = document.getElementById('multi-form');
-    // jangan hapus seluruh innerHTML, cukup hapus semua row kecuali template
     const templateRow = multiForm.querySelector('.form-row');
     multiForm.querySelectorAll('.form-row:not(:first-child)').forEach(r => r.remove());
 
-    json.forEach((rowData,index)=>{
-  const keys = Object.keys(rowData).reduce((acc,k)=> {
-    acc[k.toLowerCase().trim()] = rowData[k];
-    return acc;
-  },{});
+    dataRows.forEach((rowData, index) => {
+      let row;
+      if (index === 0) {
+        row = templateRow;
+      } else {
+        row = templateRow.cloneNode(true);
+        row.querySelectorAll('input,textarea').forEach(i => i.value = '');
+        multiForm.appendChild(row);
+      }
 
-  let row;
-  if(index===0) {
-    row = templateRow;
-  } else {
-    row = templateRow.cloneNode(true);
-    row.querySelectorAll('input,textarea').forEach(i=>i.value='');
-    multiForm.appendChild(row);
+      const getVal = (colName) => {
+        const idx = headers.indexOf(colName);
+        return idx !== -1 ? rowData[idx] : '';
+      };
+
+      row.querySelector('.nama').value   = getVal('nama');
+      row.querySelector('.nik').value    = getVal('nik');
+      row.querySelector('.alamat').value = getVal('alamat');
+      row.querySelector('.id').value     = getVal('id erinjani');
+    });
+
+    showToast(`Sheet "${sheetName}" dimuat (${dataRows.length} baris)`, 'success', 2500);
+  } catch (err) {
+    console.error("ERROR loadSelectedSheet:", err);
   }
-
-  row.querySelector('.nama').value = keys['nama'] || '';
-  row.querySelector('.nik').value  = keys['nik'] || '';
-  row.querySelector('.id').value   = keys['id'] || '';
-  row.querySelector('.alamat').value = keys['alamat'] || '';
-});
-  }
-
-  reader.readAsArrayBuffer(file);
 }
+
+
+
+
+
 
 // file zip 
 
@@ -958,24 +1040,39 @@ function setBodyBg(input) {
 }
 
 //unduh kartu perbiji
-async function downloadSingleCard(cardId, type='png') {
+async function downloadSingleCard(cardId) {
   const card = document.getElementById(cardId);
   if (!card) return;
 
   await ensureBgLoaded(card.querySelector('#card-bg'));
-  const canvas = await html2canvas(card, { useCORS:true, scale:2 });
+  const canvas = await html2canvas(card, { useCORS: true, scale: 2 });
+  const imgData = canvas.toDataURL('image/png');
 
-  canvas.toBlob(blob => {
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    const nama = card.querySelector('#card-nama').innerText || 'Unknown';
-    const id   = card.querySelector('#card-id').innerText || '';
-    a.download = `${nama}_${id}.${type}`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-  }, type==='png'?'image/png':'image/jpeg',1);
+  const nama = card.querySelector('#card-nama').innerText || 'Unknown';
+  const id   = card.querySelector('#card-id').innerText || '';
+
+  const { jsPDF } = window.jspdf;
+  const pdf = new jsPDF({
+    orientation: canvas.width > canvas.height ? 'landscape' : 'portrait',
+    unit: 'px',
+    format: [canvas.width, canvas.height]
+  });
+
+  pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
+  pdf.save(`${nama}_${id}.pdf`);
 }
+
+// download semua kartu jadi file PDF terpisah
+async function downloadAllPDF() {
+  const cards = document.querySelectorAll('.card'); // sesuaikan class kartu Anda
+  for (const card of cards) {
+    const cardId = card.id;
+    await downloadSingleCard(cardId);
+  }
+}
+
+
+
 
 //preview button
 function previewRow(btn) {
